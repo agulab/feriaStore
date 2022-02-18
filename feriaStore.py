@@ -24,8 +24,7 @@ class ItemsResource:
         resp.text = json.dumps(items)
 
 class ItemResource:
-    async def on_get(self, req: asgi.Request, resp: asgi.Response):
-        id = req.get_param_as_int("id", True)
+    async def on_get(self, req: asgi.Request, resp: asgi.Response, id):
         query = {"id": id}
         print(query)
         try:
@@ -45,7 +44,7 @@ item = ItemResource()
 
 # Endpoints
 api.add_route('/items', items)
-api.add_route('/item', item)
+api.add_route('/items/{id:int}', item)
 
 
 # For debugging purposes only
