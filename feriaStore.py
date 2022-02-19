@@ -32,6 +32,12 @@ class ItemResource:
         except Exception as e:
             print(str(type(e)) + str(e))    
 
+    async def on_delete(self, req: asgi.Request, resp: asgi.Response, id):
+            result = pymongo.results.DeleteResult
+            result = dbClient.get_default_database().get_collection("items").delete_one({"id":id})
+            if(result.deleted_count < 1):
+                resp.status = falcon.HTTP_404
+                
     def getItem(self, id):
         query = {"id": id}
         return dbClient.get_default_database().get_collection("items").find_one(query, {'_id': False})
