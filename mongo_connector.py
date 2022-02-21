@@ -18,7 +18,7 @@ __config = {
     'stop_on_duplicate': 0
 }
 
-dbClient = MongoClient(
+dbClient = MongoClient( 
             __config['uri'],
             fsync= __config['fsync'],
             read_preference= ReadPreference.PRIMARY)
