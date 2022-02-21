@@ -1,1 +1,1 @@
-web: uvicorn feriastore:api
+web: uvicorn feriaStore:api
