@@ -8,8 +8,8 @@ import json
 class ItemsResource:
     async def on_get(self, req: asgi.Request, resp: asgi.Response):
         """Handles GET requests"""
-        toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
         limit = req.get_param_as_int("limit") if req.get_param_as_int("limit") else 10
+        toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
         sort = req.get_param("sort") if req.get_param("sort") else None
         if sort:
             cursor = dbClient.get_default_database().get_collection("items").find({}, {'_id': False}).sort(sort).skip(toPage).limit(limit)
