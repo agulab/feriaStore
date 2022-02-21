@@ -1,1 +1,1 @@
-web: uvicorn feriaStore:api
+web: uvicorn feriaStore:api --port=${PORT:-5000}
