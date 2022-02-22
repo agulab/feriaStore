@@ -21,6 +21,32 @@ class SalesResource:
         resp.status = falcon.HTTP_200
         resp.text = json.dumps(sales)
 
+    async def on_post(self, req: asgi.Request, resp: asgi.Response):
+        try:
+            saleReq = await req.get_media()
+            item = dbClient.get_default_database().get_collection("items").find_one({"id": int(saleReq["itemId"])})
+            if not item:
+                resp.status = falcon.HTTP_404
+                resp.text = "No se encontró el item con id " + str(saleReq.get("itemId"))
+            elif item["stock"] < 1:
+                resp.status = falcon.HTTP_400
+                resp.text = "Imposible crear venta de item sin stock"
+            else:
+                try:
+                    sale = Sale(saleReq)
+                    dbClient.get_default_database().get_collection("sales").insert_one(sale)
+                    dbClient.get_default_database().get_collection("items").find_one_and_update({"id":item["id"]},{"$inc":{"stock":-1}})
+                    resp.status = falcon.HTTP_201
+                    del sale["_id"]
+                    resp.text = json.dumps(sale)
+                except ValueError as e:
+                    resp.status = falcon.HTTP_400
+                    resp.text = "El valor de un atributo es de tipo incorrecto: " + str(e)
+
+        except KeyError as e:
+            resp.status = falcon.HTTP_400
+            resp.text = "Falta el atributo requerido " + str(e)
+
 
 class SaleResource:
     async def on_get(self, req: asgi.Request, resp: asgi.Response, id):
@@ -40,6 +66,20 @@ class SaleResource:
     def getSale(self, id):
         query = {"id": id}
         return dbClient.get_default_database().get_collection("sales").find_one(query, {'_id': False})
+
+            
+class Sale(dict):
+    def __init__(self, sale):
+        # Atributos requeridos
+        self["price"] = int(sale["price"])
+        self["itemId"] = int(sale["itemId"])
+
+        # Atributos opcionales
+        self["date"] = int(sale.get("date") if sale.get("date") else 0)
+
+        counters = dbClient.get_default_database().get_collection("counters").find_one_and_update(
+            {},{"$inc":{"sales":1}}, return_document=pymongo.ReturnDocument.AFTER)
+        self["id"] = counters["sales"]
 
 
 salesResource = SalesResource()

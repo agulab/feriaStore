@@ -24,6 +24,21 @@ class ItemsResource:
         resp.status = falcon.HTTP_200
         resp.text = json.dumps(items)
 
+    async def on_post(self, req: asgi.Request, resp: asgi.Response):
+        try:
+            item = Item(await req.get_media())
+            result = dbClient.get_default_database().get_collection("items").insert_one(item)
+            if not result.inserted_id:
+                print("problemon")
+            else:
+                resp.status = falcon.HTTP_201
+                del item["_id"]
+                resp.text = json.dumps(item)
+
+        except KeyError as e:
+            resp.status = falcon.HTTP_400
+            resp.text = "Falta el atributo requerido " + str(e)
+
 
 class ItemResource:
     async def on_get(self, req: asgi.Request, resp: asgi.Response, id):
@@ -62,6 +77,23 @@ class ItemToStockResource:
                 resp.text = json.dumps(updatedItem)
             else:
                 resp.status = falcon.HTTP_409
+
+
+class Item(dict):
+    def __init__(self, sale):
+        # Atributos requeridos
+        self["model"] = str(sale["model"])
+        self["size"] = str(sale["size"])
+
+        # Atributos opcionales
+        self["stock"] = int(sale.get("stock") if sale.get("stock") else 0)
+        self["todo"] = int(sale.get("todo") if sale.get("todo") else 0)
+        self["img"] = sale.get("img") if sale.get("img") else ""
+
+        counters = dbClient.get_default_database().get_collection("counters").find_one_and_update(
+            {},{"$inc":{"items":1}}, return_document=pymongo.ReturnDocument.AFTER)
+        self["id"] = counters["items"]
+
 
 itemsResource = ItemsResource()
 itemResource = ItemResource()

@@ -19,7 +19,7 @@ api.add_route('/items/{id:int}', items.itemResource)
 api.add_route('/items/{id:int}/toStock', items.itemToStockResource) 
 
 
-api.add_route('/sales/', sales.salesResource)
+api.add_route('/sales', sales.salesResource)
 
 api.add_route('/sales/{id:int}', sales.saleResource)
 
