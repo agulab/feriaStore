@@ -1,87 +1,27 @@
-import falcon
 import falcon.asgi as asgi
-import mongo_connector
 import uvicorn
-import pymongo
-import json
-
-class ItemsResource:
-    async def on_get(self, req: asgi.Request, resp: asgi.Response):
-        """Handles GET requests"""
-        limit = req.get_param_as_int("limit") if req.get_param_as_int("limit") else 10
-        toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
-        sort = req.get_param("sort") if req.get_param("sort") else None
-        if sort:
-            cursor = dbClient.get_default_database().get_collection("items").find({}, {'_id': False}).sort(sort).skip(toPage).limit(limit)
-        else:
-            cursor = dbClient.get_default_database().get_collection("items").find({}, {'_id': False}).skip(toPage).limit(limit)
-
-        resp.status = falcon.HTTP_200
-        items = []
-        for item in cursor:
-            items.append(item)
-
-        resp.text = json.dumps(items)
-
-class ItemResource:
-    async def on_get(self, req: asgi.Request, resp: asgi.Response, id):
-        try:
-            item = self.getItem(id)
-            resp.status = falcon.HTTP_200
-            resp.text = json.dumps(item)
-        except Exception as e:
-            print(str(type(e)) + str(e))    
-
-    async def on_delete(self, req: asgi.Request, resp: asgi.Response, id):
-            result = pymongo.results.DeleteResult
-            result = dbClient.get_default_database().get_collection("items").delete_one({"id":id})
-            if(result.deleted_count < 1):
-                resp.status = falcon.HTTP_404
-                
-    def getItem(self, id):
-        query = {"id": id}
-        return dbClient.get_default_database().get_collection("items").find_one(query, {'_id': False})
-
-
-dbClient = mongo_connector.dbClient
-
-class ItemToStockResource:
-    async def on_put(self, req: asgi.Request, resp: asgi.Response, id):
-        if (not itemResource.getItem(id)):
-            resp.status = falcon.HTTP_404
-        else:
-            n = 1 if not req.get_param_as_int("n") else req.get_param_as_int("n")
-            query = {"$inc":{"stock":n, "todo":-n}}
-            updatedItem = dbClient.get_default_database().get_collection("items").find_one_and_update(
-                {"id":id, "todo": {"$gte":n}}, query, {'_id':False}, return_document=pymongo.ReturnDocument.AFTER)
-            if(updatedItem):
-                resp.status = falcon.HTTP_200
-                resp.text = json.dumps(updatedItem)
-            else:
-                resp.status = falcon.HTTP_409
-
-
-
+import items
+import sales
 
 # Api
 api = asgi.App()
-itemsResource = ItemsResource()
-itemResource = ItemResource()
-itemToStockResource = ItemToStockResource()
-
 
 ### Endpoints ###
 # GET: Devuelve lista de items
-api.add_route('/items', itemsResource) 
+api.add_route('/items', items.itemsResource) 
 
 # GET: Devuelve el item {id}
-api.add_route('/items/{id:int}', itemResource) 
+api.add_route('/items/{id:int}', items.itemResource) 
 
 # PUT: Pasa al stock un item {id} que estaba por hacerse.
 # Puede recibir el parámetro 'n' para especificar la cantidad
 # de items que deben pasar al stock.
-api.add_route('/items/{id:int}/toStock', itemToStockResource) 
+api.add_route('/items/{id:int}/toStock', items.itemToStockResource) 
 
+
+api.add_route('/sales/', sales.salesResource)
+
+api.add_route('/sales/{id:int}', sales.saleResource)
 
 # For debugging purposes only
 if __name__ == "__main__":
