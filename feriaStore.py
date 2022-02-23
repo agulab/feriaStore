@@ -4,7 +4,7 @@ import items
 import sales
 
 # Api
-api = asgi.App()
+api = asgi.App(cors_enable=False)
 
 ### Endpoints ###
 # GET: Devuelve lista de items
