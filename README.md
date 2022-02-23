@@ -1,3 +1,7 @@
+# API para manejo de items y ventas
+Los HTTP status de las respuestas pueden ser 200, 201, 400, 404, 409 según corresponda. También 500 si el servidor encuentra un error inesperado.
+
+
 # /items
 ### GET: retorna lista de items. 
 #### Parámetros opcionales: 
@@ -33,6 +37,9 @@
 - **page=int** número de la página requerida
 - **sort=string** nombre de alguno de los atributos de la venta por el que ordenar
 - **asc** para especificar un orden ascendente. Por defecto el orden es descendente
+#### Ejemplos:
+- `/sales?limit=10,page=1,sort=price,asc`
+- `/sales?page=2,sort=date`
 ### POST: crea una nueva venta y la retorna
 #### Atributos obligatorios del body:
 - **itemId=int** el id del item que se vende
