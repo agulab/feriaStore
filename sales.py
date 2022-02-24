@@ -3,6 +3,7 @@ import falcon
 import json
 import falcon.asgi as asgi
 import mongo_connector
+import re
 
 dbClient = mongo_connector.dbClient
 
@@ -36,8 +37,9 @@ class SalesResource:
                     sale = Sale(saleReq)
                     dbClient.get_default_database().get_collection("sales").insert_one(sale)
                     dbClient.get_default_database().get_collection("items").find_one_and_update({"id":item["id"]},{"$inc":{"stock":-1}})
-                    resp.status = falcon.HTTP_201
+                    
                     del sale["_id"]
+                    resp.status = falcon.HTTP_201
                     resp.text = json.dumps(sale)
                 except ValueError as e:
                     resp.status = falcon.HTTP_400
@@ -70,12 +72,16 @@ class SaleResource:
             
 class Sale(dict):
     def __init__(self, sale):
+        checkDate = re.compile("\d{4}-\d{2}-\d{2}")
+        
         # Atributos requeridos
         self["price"] = int(sale["price"])
         self["itemId"] = int(sale["itemId"])
-
-        # Atributos opcionales
-        self["date"] = int(sale.get("date") if sale.get("date") else 0)
+        if checkDate.match(sale["date"]):
+            self["date"] = sale["date"]
+        else:
+            raise ValueError("El formato de le fecha debe ser 'YYYY-MM-DD'")
+            
 
         counters = dbClient.get_default_database().get_collection("counters").find_one_and_update(
             {},{"$inc":{"sales":1}}, return_document=pymongo.ReturnDocument.AFTER)
