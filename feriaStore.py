@@ -6,16 +6,11 @@ import sales
 # Api
 api = asgi.App(cors_enable=True)
 
-### Endpoints ###
-# GET: Devuelve lista de items
+
 api.add_route('/items', items.itemsResource) 
 
-# GET: Devuelve el item {id}
 api.add_route('/items/{id:int}', items.itemResource) 
 
-# PUT: Pasa al stock un item {id} que estaba por hacerse.
-# Puede recibir el parámetro 'n' para especificar la cantidad
-# de items que deben pasar al stock.
 api.add_route('/items/{id:int}/toStock', items.itemToStockResource) 
 
 
