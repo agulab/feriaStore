@@ -49,6 +49,6 @@ Los HTTP status de las respuestas pueden ser 200, 201, 400, 404, 409 según corr
 #### Atributos obligatorios del body:
 - **itemId=int** el id del item que se vende
 - **price=int** el precio del item que se vende
-
+- **date=string** la fecha en formato "YYYY-MM-DD"
 # /sales/{id}
 ### GET: retorna la venta {id}
