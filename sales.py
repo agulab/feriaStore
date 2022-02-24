@@ -14,9 +14,14 @@ class SalesResource:
         sort = req.get_param("sort") if req.get_param("sort") else "date"
         asc = pymongo.ASCENDING if req.get_param_as_bool("asc") else pymongo.DESCENDING
 
-        cursor = dbClient.get_default_database().get_collection("sales").find({}, {'_id': False}).sort(sort, asc).skip(toPage).limit(limit)
+        cursor = dbClient.get_default_database().get_collection("sales").aggregate([{'$lookup':{'from': 'items', 'localField': 'itemId', 'foreignField': 'id', 'as': 'item'}}]) 
+            #find({}, {'_id': False}).sort(sort, asc).skip(toPage).limit(limit)
         sales = []
         for sale in cursor:
+            sale["model"] = sale["item"][0]["model"]
+            sale["size"] = sale["item"][0]["size"]
+            del sale["item"]
+            del sale["_id"]
             sales.append(sale)
 
         resp.status = falcon.HTTP_200
