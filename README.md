@@ -24,6 +24,11 @@ Los HTTP status de las respuestas pueden ser 200, 201, 400, 404, 409 según corr
 # /items/{id}
 ### GET: retorna el item {id}
 ### DELETE: elimina el item {id}
+### PATCH: modifica el item{id}
+#### Atributos opcionales del body:
+- **todo=int** nuevo valor para 'todo'
+- **stock=int** nuevo valor para 'stock'
+- **img=string** nueva url de 'img'
 
 # /items/{id}/toStock
 ### PUT: suma al stock y resta de toDo

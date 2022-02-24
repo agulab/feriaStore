@@ -58,6 +58,27 @@ class ItemResource:
             if(result.deleted_count < 1):
                 resp.status = falcon.HTTP_404
                 
+    async def on_patch(self, req: asgi.Request, resp: asgi.Response, id):
+        item = self.getItem(id)
+        if not item:
+            resp.status = falcon.HTTP_404
+        else:
+            body = dict(await req.get_media())
+            if body.get("todo") and int(body["todo"]) >= 0:
+                item["todo"] = int(body["todo"])
+            if "img" in body:
+                item["img"] = str(body["img"])
+            if body.get("stock") and int(body["stock"]) >= 0:
+                item["stock"] = int(body["stock"])
+
+            dbClient.get_default_database().get_collection("items").find_one_and_update({"id":id},{ "$set": {
+                "img":item["img"],
+                "stock":item["stock"],
+                "todo":item["todo"],
+            }})
+            resp.status = falcon.HTTP_200
+            resp.text = json.dumps(item)
+
     def getItem(self, id):
         query = {"id": id}
         return dbClient.get_default_database().get_collection("items").find_one(query, {'_id': False})
