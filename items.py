@@ -39,6 +39,13 @@ class ItemsResource:
             resp.status = falcon.HTTP_400
             resp.text = "Falta el atributo requerido " + str(e)
 
+    async def on_patch(self, req: asgi.Request, resp: asgi.Response):
+        items = dbClient.get_default_database().get_collection("items").find({"todo":{"$gt":0}}, {"_id":False})
+        for item in items:
+            dbClient.get_default_database().get_collection("items").update_one({"id":item["id"]},{"$inc":{"stock":item["todo"], "todo":-item["todo"]}})
+        
+        resp.status = falcon.HTTP_200
+
 
 class ItemResource:
     async def on_get(self, req: asgi.Request, resp: asgi.Response, id):

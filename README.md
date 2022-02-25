@@ -20,6 +20,7 @@ Los HTTP status de las respuestas pueden ser 200, 201, 400, 404, 409 según corr
 - **stock=int** por defecto se crea con stock 0
 - **todo=int** por defecto se crea con toDo 0
 - **img=string** url de una imagen
+### PATCH: actualiza todos los items pasando sus 'todo' al 'stock'
 
 # /items/{id}
 ### GET: retorna el item {id}
