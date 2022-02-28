@@ -13,9 +13,14 @@ class SalesResource:
         toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
         sort = req.get_param("sort") if req.get_param("sort") else "date"
         asc = pymongo.ASCENDING if req.get_param_as_bool("asc") else pymongo.DESCENDING
+        if sort in ["model","size"]:
+            sort = "item." + sort
 
-        cursor = dbClient.get_default_database().get_collection("sales").aggregate([{'$lookup':{'from': 'items', 'localField': 'itemId', 'foreignField': 'id', 'as': 'item'}}]) 
-            #find({}, {'_id': False}).sort(sort, asc).skip(toPage).limit(limit)
+        cursor = dbClient.get_default_database().get_collection("sales").aggregate([
+            {'$lookup':{'from': 'items', 'localField': 'itemId', 'foreignField': 'id', 'as': 'item'}},
+            {'$sort': {sort:asc}},
+            {'$skip':toPage},
+            {'$limit':limit}])
         sales = []
         for sale in cursor:
             sale["model"] = sale["item"][0]["model"]
