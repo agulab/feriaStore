@@ -18,7 +18,7 @@ class SalesResource:
 
         cursor = dbClient.get_default_database().get_collection("sales").aggregate([
             {'$lookup':{'from': 'items', 'localField': 'itemId', 'foreignField': 'id', 'as': 'item'}},
-            {'$sort': {sort:asc}},
+            {'$sort': {sort:asc, "_id":asc}},
             {'$skip':toPage},
             {'$limit':limit}])
         sales = []
@@ -73,6 +73,7 @@ class SaleResource:
         result = pymongo.results.DeleteResult
         result = dbClient.get_default_database().get_collection("sales").delete_one({"id":id})
         if(result.deleted_count < 1):
+            dbClient.get_default_database().get_collection("items").update_one({"id":id}, {"$inc":{"stock":-1}})
             resp.status = falcon.HTTP_404
                 
     def getSale(self, id):
