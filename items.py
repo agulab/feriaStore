@@ -14,7 +14,7 @@ class ItemsResource:
         direction = pymongo.ASCENDING if req.has_param("asc") else pymongo.DESCENDING
 
         if sort:
-            cursor = dbClient.get_default_database().get_collection("items").find({}, {'_id': False}).sort(sort, direction).skip(toPage).limit(limit)
+            cursor = dbClient.get_default_database().get_collection("items").find({}, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
         else:
             cursor = dbClient.get_default_database().get_collection("items").find({}, {'_id': False}).skip(toPage).limit(limit)
         items = []
