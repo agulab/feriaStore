@@ -70,10 +70,11 @@ class SaleResource:
             resp.text = json.dumps(sale)
 
     async def on_delete(self, req: asgi.Request, resp: asgi.Response, id):
+        sale = dbClient.get_default_database().get_collection("sales").find_one({"id":id})
         result = pymongo.results.DeleteResult
         result = dbClient.get_default_database().get_collection("sales").delete_one({"id":id})
+        dbClient.get_default_database().get_collection("items").update_one({"id":sale["itemId"]}, {"$inc":{"stock":1}})
         if(result.deleted_count < 1):
-            dbClient.get_default_database().get_collection("items").update_one({"id":id}, {"$inc":{"stock":-1}})
             resp.status = falcon.HTTP_404
                 
     def getSale(self, id):
