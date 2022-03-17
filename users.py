@@ -37,7 +37,7 @@ class User(dict):
         self["name"] = str(sale["name"])
 
         # Atributos opcionales
-        self["role"] = sale.get("role") if sale.get("role") else "seller"
+        self["role"] = sale.get("role") if sale.get("role") else "admin"
 
 
 def userLoader(attributes, email, password):

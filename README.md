@@ -10,11 +10,11 @@ Los HTTP status de las respuestas pueden ser 200, 201, 400, 404, 409 según corr
 - **sort=string** nombre de alguno de los atributos del item por el que ordenar
 - **asc** para especificar un orden ascendente. Por defecto el orden es descendente
 #### Ejemplos:
-- `/items?limit=10,page=1,sort=model,asc`
+- `/items?limit=10,page=1,sort=name,asc`
 - `/items?limit=5,sort=id`
 ### POST: crea un nuevo item y lo retorna
 #### Atributos obligatorios del body:
-- **model=string** el modelo del item
+- **name=string** el nombre del item
 - **size=string** el tamaño del item
 #### Atributos opcionales del body:
 - **stock=int** por defecto se crea con stock 0
