@@ -1,10 +1,16 @@
 asgiref==3.5.0
+bcrypt==3.2.0
+cffi==1.15.0
 click==8.0.3
 dnspython==2.2.0
 falcon==3.0.1
+falcon-auth2==0.1.0
+greenlet==1.1.2
 h11==0.13.0
 pipdeptree==2.2.1
 pipfreeze==2.0.3
+pycparser==2.21
 pymongo==4.0.1
 python-dotenv==0.19.2
+six==1.16.0
 uvicorn==0.17.5

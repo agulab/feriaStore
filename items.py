@@ -109,8 +109,7 @@ class ItemToStockResource:
 
 class Item(dict):
     def __init__(self, item: dict, invId):
-        self["inv"] = invId
-
+        
         # Atributos requeridos
         self["name"] = str(item.pop("name"))
 
@@ -120,6 +119,8 @@ class Item(dict):
         self["img"] = item.pop("img", "")
 
         self |= item
+
+        self["inv"] = invId
 
         counters = dbClient.get_default_database().get_collection("counters").find_one_and_update(
             {},{"$inc":{"items":1}}, return_document=pymongo.ReturnDocument.AFTER)
