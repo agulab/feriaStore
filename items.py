@@ -26,7 +26,7 @@ class ItemsResource:
 
     async def on_post(self, req: asgi.Request, resp: asgi.Response):
         try:
-            item = Item(await req.get_media())
+            item = Item(await req.get_media(), req.context.auth["user"]["id"])
             result = dbClient.get_default_database().get_collection("items").insert_one(item)
             if not result.inserted_id:
                 print("problemon")
@@ -108,15 +108,19 @@ class ItemToStockResource:
 
 
 class Item(dict):
-    def __init__(self, sale):
+    def __init__(self, item: dict, invId):
+        
         # Atributos requeridos
-        self["model"] = str(sale["model"])
-        self["size"] = str(sale["size"])
+        self["name"] = str(item.pop("name"))
 
         # Atributos opcionales
-        self["stock"] = int(sale.get("stock") if sale.get("stock") else 0)
-        self["todo"] = int(sale.get("todo") if sale.get("todo") else 0)
-        self["img"] = sale.get("img") if sale.get("img") else ""
+        self["stock"] = int(item.pop("stock", 0))
+        self["todo"] = int(item.pop("todo", 0))
+        self["img"] = item.pop("img", "")
+
+        self |= item
+
+        self["inv"] = invId
 
         counters = dbClient.get_default_database().get_collection("counters").find_one_and_update(
             {},{"$inc":{"items":1}}, return_document=pymongo.ReturnDocument.AFTER)

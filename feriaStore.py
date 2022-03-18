@@ -2,9 +2,14 @@ import falcon.asgi as asgi
 import uvicorn
 import items
 import sales
+import users
+from falcon_auth2 import AuthMiddleware
+from falcon_auth2.backends import BasicAuthBackend
 
+auth_backend = BasicAuthBackend(users.userLoader)
+auth_middleware = AuthMiddleware(auth_backend)
 # Api
-api = asgi.App(cors_enable=True)
+api = asgi.App(middleware=[auth_middleware], cors_enable=True)
 
 
 api.add_route('/items', items.itemsResource) 
@@ -17,6 +22,9 @@ api.add_route('/items/{id:int}/toStock', items.itemToStockResource)
 api.add_route('/sales', sales.salesResource)
 
 api.add_route('/sales/{id:int}', sales.saleResource)
+
+
+api.add_route('/users', users.usersResource)
 
 # For debugging purposes only
 if __name__ == "__main__":
