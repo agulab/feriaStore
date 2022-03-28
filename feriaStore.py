@@ -3,7 +3,7 @@ import uvicorn
 import items
 import sales
 import users
-import customProperties
+import properties
 from falcon_auth2 import AuthMiddleware
 from falcon_auth2.backends import BasicAuthBackend
 
@@ -28,7 +28,7 @@ api.add_route('/sales/{id:int}', sales.saleResource)
 api.add_route('/users', users.usersResource)
 
 
-api.add_route('/custom', customProperties.customPropertiesResource)
+api.add_route('/properties', properties.propertiesResource)
 
 
 # For debugging purposes only
