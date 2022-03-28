@@ -8,15 +8,16 @@ dbClient = mongo_connector.dbClient
 
 class ItemsResource:
     async def on_get(self, req: asgi.Request, resp: asgi.Response):
+        invId = req.context.auth["user"]["id"]
         limit = req.get_param_as_int("limit") if req.get_param_as_int("limit") else 10
         toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
         sort = req.get_param("sort") if req.get_param("sort") else "date"
         direction = pymongo.ASCENDING if req.has_param("asc") else pymongo.DESCENDING
 
         if sort:
-            cursor = dbClient.get_default_database().get_collection("items").find({}, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
+            cursor = dbClient.get_default_database().get_collection("items").find({'inv': invId}, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
         else:
-            cursor = dbClient.get_default_database().get_collection("items").find({}, {'_id': False}).skip(toPage).limit(limit)
+            cursor = dbClient.get_default_database().get_collection("items").find({'inv': invId}, {'_id': False}).skip(toPage).limit(limit)
         items = []
         for item in cursor:
             items.append(item)
@@ -40,7 +41,8 @@ class ItemsResource:
             resp.text = "Falta el atributo requerido " + str(e)
 
     async def on_patch(self, req: asgi.Request, resp: asgi.Response):
-        items = dbClient.get_default_database().get_collection("items").find({"todo":{"$gt":0}}, {"_id":False})
+        invId = req.context.auth["user"]["id"]
+        items = dbClient.get_default_database().get_collection("items").find({"inv": invId, "todo":{"$gt":0}}, {"_id":False})
         for item in items:
             dbClient.get_default_database().get_collection("items").update_one({"id":item["id"]},{"$inc":{"stock":item["todo"], "todo":-item["todo"]}})
         
@@ -50,7 +52,7 @@ class ItemsResource:
 class ItemResource:
     async def on_get(self, req: asgi.Request, resp: asgi.Response, id):
         try:
-            item = self.getItem(id)
+            item = self.getItem(id, req.context.auth["user"]["id"])
             if not item:
                 resp.status = falcon.HTTP_404
             else:
@@ -60,13 +62,14 @@ class ItemResource:
             print(str(type(e)) + str(e))    
 
     async def on_delete(self, req: asgi.Request, resp: asgi.Response, id):
+            invId = req.context.auth["user"]["id"]
             result = pymongo.results.DeleteResult
-            result = dbClient.get_default_database().get_collection("items").delete_one({"id":id})
+            result = dbClient.get_default_database().get_collection("items").delete_one({"id":id, "inv": invId})
             if(result.deleted_count < 1):
                 resp.status = falcon.HTTP_404
                 
     async def on_patch(self, req: asgi.Request, resp: asgi.Response, id):
-        item = self.getItem(id)
+        item = self.getItem(id, req.context.auth["user"]["id"])
         if not item:
             resp.status = falcon.HTTP_404
         else:
@@ -89,14 +92,14 @@ class ItemResource:
             resp.status = falcon.HTTP_200
             resp.text = json.dumps(item)
 
-    def getItem(self, id):
-        query = {"id": id}
+    def getItem(self, id, invId):
+        query = {"id": id, "inv": invId}
         return dbClient.get_default_database().get_collection("items").find_one(query, {'_id': False})
 
 
 class ItemToStockResource:
     async def on_put(self, req: asgi.Request, resp: asgi.Response, id):
-        if (not itemResource.getItem(id)):
+        if (not itemResource.getItem(id, req.context.auth["user"]["id"])):
             resp.status = falcon.HTTP_404
         else:
             n = 1 if not req.get_param_as_int("n") else req.get_param_as_int("n")
