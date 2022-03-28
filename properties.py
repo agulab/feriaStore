@@ -5,7 +5,7 @@ import mongo_connector
 
 dbClient = mongo_connector.dbClient
 
-class CustomProperties:
+class Properties:
     async def on_get(self, req: asgi.Request, resp: asgi.Response):
         invId = req.context.auth["user"]["id"]
         customProperties = dbClient.get_default_database().get_collection("items").aggregate([
@@ -24,4 +24,4 @@ class CustomProperties:
 
 
 
-customPropertiesResource = CustomProperties()
+propertiesResource = Properties()
