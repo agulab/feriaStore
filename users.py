@@ -59,6 +59,9 @@ def createUser(userData):
         "password": hashedP.decode("utf-8")
     }
 
+    counters = dbClient.get_default_database().get_collection("counters").find_one_and_update(
+            {},{"$inc":{"users":1}}, return_document=pymongo.ReturnDocument.AFTER)
+    user["id"] = counters["users"]
     dbClient.get_default_database().get_collection("users").insert_one(user)
 
 usersResource = UsersResource()

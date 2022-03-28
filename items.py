@@ -77,11 +77,14 @@ class ItemResource:
                 item["img"] = str(body["img"])
             if body.get("stock") and int(body["stock"]) >= 0:
                 item["stock"] = int(body["stock"])
+            if "custom" in body:
+                item["custom"] |= body["custom"]
 
             dbClient.get_default_database().get_collection("items").find_one_and_update({"id":id},{ "$set": {
                 "img":item["img"],
                 "stock":item["stock"],
                 "todo":item["todo"],
+                "custom":item["custom"]
             }})
             resp.status = falcon.HTTP_200
             resp.text = json.dumps(item)
@@ -118,7 +121,7 @@ class Item(dict):
         self["todo"] = int(item.pop("todo", 0))
         self["img"] = item.pop("img", "")
 
-        self |= item
+        self["custom"] = item.pop("custom",{})
 
         self["inv"] = invId
 
