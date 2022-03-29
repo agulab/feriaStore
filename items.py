@@ -90,7 +90,8 @@ class ItemResource:
                 "img":item["img"],
                 "stock":item["stock"],
                 "todo":item["todo"],
-                "custom":item["custom"]
+                "custom":item["custom"],
+                "keywords":item["keywords"]
             }})
             resp.status = falcon.HTTP_200
             resp.text = json.dumps(item)
@@ -140,8 +141,8 @@ def generateKeywords(item):
     keywords = []
     keywords = item["name"].casefold().split()
     if item.get("custom"):
-        keywords.extend(list(item["custom"]))
         keywords.extend(list(item["custom"].values()))
+        keywords.extend(list(item["custom"]))
 
     item["keywords"] = " ".join(keywords)
 
