@@ -28,6 +28,7 @@ class ItemsResource:
     async def on_post(self, req: asgi.Request, resp: asgi.Response):
         try:
             item = Item(await req.get_media(), req.context.auth["user"]["id"])
+            generateKeywords(item)
             result = dbClient.get_default_database().get_collection("items").insert_one(item)
             if not result.inserted_id:
                 print("problemon")
@@ -83,6 +84,8 @@ class ItemResource:
             if "custom" in body:
                 item["custom"] |= body["custom"]
 
+            generateKeywords(item)
+
             dbClient.get_default_database().get_collection("items").find_one_and_update({"id":id},{ "$set": {
                 "img":item["img"],
                 "stock":item["stock"],
@@ -131,6 +134,16 @@ class Item(dict):
         counters = dbClient.get_default_database().get_collection("counters").find_one_and_update(
             {},{"$inc":{"items":1}}, return_document=pymongo.ReturnDocument.AFTER)
         self["id"] = counters["items"]
+
+
+def generateKeywords(item):
+    keywords = []
+    keywords = item["name"].casefold().split()
+    if item.get("custom"):
+        keywords.extend(list(item["custom"]))
+        keywords.extend(list(item["custom"].values()))
+
+    item["keywords"] = " ".join(keywords)
 
 
 itemsResource = ItemsResource()
