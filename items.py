@@ -13,11 +13,18 @@ class ItemsResource:
         toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
         sort = req.get_param("sort") if req.get_param("sort") else "date"
         direction = pymongo.ASCENDING if req.has_param("asc") else pymongo.DESCENDING
+        text = req.get_param("text")
 
-        if sort:
-            cursor = dbClient.get_default_database().get_collection("items").find({'inv': invId}, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
-        else:
-            cursor = dbClient.get_default_database().get_collection("items").find({'inv': invId}, {'_id': False}).skip(toPage).limit(limit)
+        query = {'inv': invId}
+        if text:
+            wordsList = ""
+            for word in text.split():
+                wordsList += "(?=.*\\b" + word + ")"
+            regex =  "^" + wordsList + ".*$"
+            query['keywords'] = {'$regex': regex, '$options': 'i'}
+
+        cursor = dbClient.get_default_database().get_collection("items").find(query, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
+
         items = []
         for item in cursor:
             items.append(item)
@@ -142,7 +149,7 @@ def generateKeywords(item):
     keywords = item["name"].casefold().split()
     if item.get("custom"):
         keywords.extend(list(item["custom"].values()))
-        keywords.extend(list(item["custom"]))
+        keywords.extend(list(item["custom"]))   
 
     item["keywords"] = " ".join(keywords)
 
