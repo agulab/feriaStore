@@ -146,12 +146,16 @@ class Item(dict):
 
 
 def generateKeywords(item):
-    keywords = set(item["name"].casefold().split())
+    keywords = []
+    for s in item["name"].casefold().split():
+        if s not in keywords: keywords.append(s)
     if item.get("custom"):
-        for v in list(item["custom"].values()):
-            keywords.update(v.split())
-        for k in list(item["custom"]):
-            keywords.update(k.split())   
+        for v in item["custom"].values():
+            for s in v.casefold().split(): 
+                if s not in keywords: keywords.append(s)
+        for k in item["custom"]:
+            for s in k.casefold().split():
+                if s not in keywords: keywords.append(s)   
 
     item["keywords"] = " ".join(keywords)
 
