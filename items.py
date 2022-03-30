@@ -3,6 +3,7 @@ import falcon
 import json
 import falcon.asgi as asgi
 import mongo_connector
+from unidecode import unidecode
 
 dbClient = mongo_connector.dbClient
 
@@ -19,7 +20,7 @@ class ItemsResource:
         if text:
             wordsList = ""
             for word in text.split():
-                wordsList += "(?=.*\\b" + word + ")"
+                wordsList += "(?=.*\\b" + unidecode(word) + ")"
             regex =  "^" + wordsList + ".*$"
             query['keywords'] = {'$regex': regex, '$options': 'i'}
 
@@ -148,13 +149,16 @@ class Item(dict):
 def generateKeywords(item):
     keywords = []
     for s in item["name"].casefold().split():
+        s = unidecode(s)
         if s not in keywords: keywords.append(s)
     if item.get("custom"):
         for v in item["custom"].values():
-            for s in v.casefold().split(): 
+            for s in v.casefold().split():
+                s = unidecode(s) 
                 if s not in keywords: keywords.append(s)
         for k in item["custom"]:
             for s in k.casefold().split():
+                s = unidecode(s)
                 if s not in keywords: keywords.append(s)   
 
     item["keywords"] = " ".join(keywords)
