@@ -24,6 +24,7 @@ class ItemsResource:
             query['keywords'] = {'$regex': regex, '$options': 'i'}
 
         cursor = dbClient.get_default_database().get_collection("items").find(query, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
+        print(cursor.explain())
 
         items = []
         for item in cursor:
@@ -145,11 +146,12 @@ class Item(dict):
 
 
 def generateKeywords(item):
-    keywords = []
-    keywords = item["name"].casefold().split()
+    keywords = set(item["name"].casefold().split())
     if item.get("custom"):
-        keywords.extend(list(item["custom"].values()))
-        keywords.extend(list(item["custom"]))   
+        for v in list(item["custom"].values()):
+            keywords.update(v.split())
+        for k in list(item["custom"]):
+            keywords.update(k.split())   
 
     item["keywords"] = " ".join(keywords)
 
