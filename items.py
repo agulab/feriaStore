@@ -3,6 +3,7 @@ import falcon
 import json
 import falcon.asgi as asgi
 import mongo_connector
+from unidecode import unidecode
 
 dbClient = mongo_connector.dbClient
 
@@ -13,11 +14,19 @@ class ItemsResource:
         toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
         sort = req.get_param("sort") if req.get_param("sort") else "date"
         direction = pymongo.ASCENDING if req.has_param("asc") else pymongo.DESCENDING
+        text = req.get_param("text")
 
-        if sort:
-            cursor = dbClient.get_default_database().get_collection("items").find({'inv': invId}, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
-        else:
-            cursor = dbClient.get_default_database().get_collection("items").find({'inv': invId}, {'_id': False}).skip(toPage).limit(limit)
+        query = {'inv': invId}
+        if text:
+            wordsList = ""
+            for word in text.split():
+                wordsList += "(?=.*\\b" + unidecode(word) + ")"
+            regex =  "^" + wordsList + ".*$"
+            query['keywords'] = {'$regex': regex, '$options': 'i'}
+
+        cursor = dbClient.get_default_database().get_collection("items").find(query, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
+        print(cursor.explain())
+
         items = []
         for item in cursor:
             items.append(item)
@@ -28,6 +37,7 @@ class ItemsResource:
     async def on_post(self, req: asgi.Request, resp: asgi.Response):
         try:
             item = Item(await req.get_media(), req.context.auth["user"]["id"])
+            generateKeywords(item)
             result = dbClient.get_default_database().get_collection("items").insert_one(item)
             if not result.inserted_id:
                 print("problemon")
@@ -83,11 +93,14 @@ class ItemResource:
             if "custom" in body:
                 item["custom"] |= body["custom"]
 
+            generateKeywords(item)
+
             dbClient.get_default_database().get_collection("items").find_one_and_update({"id":id},{ "$set": {
                 "img":item["img"],
                 "stock":item["stock"],
                 "todo":item["todo"],
-                "custom":item["custom"]
+                "custom":item["custom"],
+                "keywords":item["keywords"]
             }})
             resp.status = falcon.HTTP_200
             resp.text = json.dumps(item)
@@ -131,6 +144,24 @@ class Item(dict):
         counters = dbClient.get_default_database().get_collection("counters").find_one_and_update(
             {},{"$inc":{"items":1}}, return_document=pymongo.ReturnDocument.AFTER)
         self["id"] = counters["items"]
+
+
+def generateKeywords(item):
+    keywords = []
+    for s in item["name"].casefold().split():
+        s = unidecode(s)
+        if s not in keywords: keywords.append(s)
+    if item.get("custom"):
+        for v in item["custom"].values():
+            for s in v.casefold().split():
+                s = unidecode(s) 
+                if s not in keywords: keywords.append(s)
+        for k in item["custom"]:
+            for s in k.casefold().split():
+                s = unidecode(s)
+                if s not in keywords: keywords.append(s)   
+
+    item["keywords"] = " ".join(keywords)
 
 
 itemsResource = ItemsResource()
