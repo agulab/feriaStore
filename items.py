@@ -25,7 +25,6 @@ class ItemsResource:
             query['keywords'] = {'$regex': regex, '$options': 'i'}
 
         cursor = dbClient.get_default_database().get_collection("items").find(query, {'_id': False}).sort([(sort, direction),("_id",direction)]).skip(toPage).limit(limit)
-        print(cursor.explain())
 
         items = []
         for item in cursor:
