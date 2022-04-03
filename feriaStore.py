@@ -5,9 +5,20 @@ import sales
 import users
 import properties
 from falcon_auth2 import AuthMiddleware
-from falcon_auth2.backends import BasicAuthBackend
+from falcon_auth2.backends import JWTAuthBackend
 
-auth_backend = BasicAuthBackend(users.userLoader)
+claims_options = {
+    "sub": {
+        "essential": True
+    },
+    "rol": {
+        "essential": True
+    },
+    "inv": {
+        "essential": True
+    }
+}
+auth_backend = JWTAuthBackend(users.userLoader, users.jwtKey, claims_options=claims_options)
 auth_middleware = AuthMiddleware(auth_backend)
 # Api
 api = asgi.App(middleware=[auth_middleware], cors_enable=True)

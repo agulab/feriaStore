@@ -4,12 +4,16 @@ import json
 import falcon.asgi as asgi
 import mongo_connector
 import bcrypt
+from os import environ
+from time import time
+from authlib.jose import jwt
 
 dbClient = mongo_connector.dbClient
+jwtTTL = 60 * 60 # 1 hora
 
 class UsersResource:
     auth = {
-        "exempt_methods": ["POST"]
+        "exempt_methods": ["POST", "GET"]
     }
 
     #Crea un usuario
@@ -25,9 +29,24 @@ class UsersResource:
 
     #LOGIN: retorna el usuario de la BBDD
     async def on_get(self, req: asgi.Request, resp: asgi.Response):
-        resp.status = falcon.HTTP_200
-        resp.text = json.dumps(req.context.auth["user"])
-
+        body = await req.get_media()
+        if not body.get("email") or not body.get("password"):
+            resp.status = falcon.HTTP_400
+            resp.text = "El body debe contener los campos 'email' y 'password'"
+        else:
+            dbUser = dbClient.get_default_database().get_collection("users").find_one({"email":body["email"]}, {"_id":False})
+            if dbUser and bcrypt.checkpw(body["password"].encode("utf-8"), dbUser["password"].encode("utf-8")):
+                del dbUser["password"]
+                dbUser["jwt"] = createJWLToken(dbUser["id"], dbUser["role"], dbUser["id"])
+                resp.status = falcon.HTTP_200
+                resp.text = json.dumps(dbUser)
+            elif dbUser:
+                resp.status = falcon.HTTP_403
+                resp.text = "El password es incorrecto"
+            else:
+                resp.status = falcon.HTTP_404
+                resp.text = "El email " + body["email"] + " no está registrado"
+        
 
 class User(dict):
     def __init__(self, sale):
@@ -40,14 +59,18 @@ class User(dict):
         self["role"] = sale.get("role") if sale.get("role") else "admin"
 
 
-def userLoader(attributes, email, password):
-    dbUser = dbClient.get_default_database().get_collection("users").find_one({"email":email}, {"_id":False})
-    if dbUser and bcrypt.checkpw(password.encode("utf-8"), dbUser["password"].encode("utf-8")):
-        del dbUser["password"]
-        return dbUser
-    else:
-        return None
+def userLoader(attributes, payload):
+    return {"id": payload["sub"]}
 
+
+def createJWLToken(id, role, inv):
+    payload = {
+        "sub": id,
+        "rol": role,
+        "inv": inv,
+        "exp": int(time()) + jwtTTL
+    }
+    return jwt.encode({"alg": "HS256"}, payload, jwtKey).decode("utf-8")
 
 def createUser(userData):
     hashedP = bcrypt.hashpw(userData["password"].encode("utf-8"), bcrypt.gensalt())
@@ -65,3 +88,4 @@ def createUser(userData):
     dbClient.get_default_database().get_collection("users").insert_one(user)
 
 usersResource = UsersResource()
+jwtKey = environ.get("FERIA_APP_JWT_KEY")
