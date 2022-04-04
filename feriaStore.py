@@ -1,4 +1,5 @@
 import falcon.asgi as asgi
+from falcon import CORSMiddleware
 import uvicorn
 import items
 import sales
@@ -21,7 +22,7 @@ claims_options = {
 auth_backend = JWTAuthBackend(users.userLoader, users.jwtKey, claims_options=claims_options)
 auth_middleware = AuthMiddleware(auth_backend)
 # Api
-api = asgi.App(middleware=[auth_middleware], cors_enable=True)
+api = asgi.App(middleware=[auth_middleware, CORSMiddleware(allow_credentials='*')])
 
 
 api.add_route('/items', items.itemsResource) 
