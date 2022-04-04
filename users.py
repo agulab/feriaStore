@@ -13,7 +13,7 @@ jwtTTL = 60 * 60 # 1 hora
 
 class UsersResource:
     auth = {
-        "exempt_methods": ["POST", "GET"]
+        "exempt_methods": ["POST", "GET", "OPTIONS"]
     }
 
     #Crea un usuario
