@@ -4,6 +4,7 @@ import items
 import sales
 import users
 import properties
+import sessions
 from falcon_auth2 import AuthMiddleware
 from falcon_auth2.backends import JWTAuthBackend
 
@@ -18,7 +19,7 @@ claims_options = {
         "essential": True
     }
 }
-auth_backend = JWTAuthBackend(users.userLoader, users.jwtKey, claims_options=claims_options)
+auth_backend = JWTAuthBackend(users.userLoader, sessions.jwtKey, claims_options=claims_options)
 auth_middleware = AuthMiddleware(auth_backend)
 # Api
 api = asgi.App(middleware=[auth_middleware], cors_enable=True)
@@ -37,6 +38,9 @@ api.add_route('/sales/{id:int}', sales.saleResource)
 
 
 api.add_route('/users', users.usersResource)
+
+
+api.add_route('/sessions', sessions.sessionsResource)
 
 
 api.add_route('/properties', properties.propertiesResource)
