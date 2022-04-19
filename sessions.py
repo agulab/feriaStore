@@ -27,7 +27,7 @@ class SessionsResource:
                 resp.status = falcon.HTTP_200
                 resp.text = json.dumps(dbUser)
             elif dbUser:
-                resp.status = falcon.HTTP_403
+                resp.status = falcon.HTTP_401
                 resp.text = "El password es incorrecto"
             else:
                 resp.status = falcon.HTTP_404
