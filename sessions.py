@@ -8,7 +8,7 @@ from time import time
 from os import environ
 
 dbClient = mongo_connector.dbClient
-jwtTTL = 60 * 60 # 1 hora
+jwtTTL = 60 * 60 * 18 # 18 horas
 
 class SessionsResource:
     auth = {"auth_disabled": True}
