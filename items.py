@@ -163,6 +163,10 @@ def generateKeywords(item):
     item["keywords"] = " ".join(keywords)
 
 
+def deleteInvItems(invId):
+    deleteResult = dbClient.get_default_database().get_collection("items").delete_many({"inv":invId})
+    return deleteResult.deleted_count
+
 itemsResource = ItemsResource()
 itemResource = ItemResource()
 itemToStockResource = ItemToStockResource()

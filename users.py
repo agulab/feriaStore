@@ -1,13 +1,19 @@
 import pymongo
 import falcon
 import falcon.asgi as asgi
+from items import ItemsResource
 import mongo_connector
 import bcrypt
+import items
+import sales
+import json
 
 dbClient = mongo_connector.dbClient
 
 class UsersResource:
-    auth = {"auth_disabled": True}
+    auth = {
+        'exempt_methods': ['POST']
+    }
 
     #Crea un usuario
     async def on_post(self, req: asgi.Request, resp: asgi.Response):
@@ -19,6 +25,14 @@ class UsersResource:
         except pymongo.errors.DuplicateKeyError as e:
             resp.status = falcon.HTTP_409
             resp.text = "Ya existe un usuario con ese email"
+
+    #Elimina un usuario
+    async def on_delete(self, req: asgi.Request, resp: asgi.Response):
+        userId = req.context.auth["user"]["id"]
+
+        result = deleteUser(userId)
+        resp.status = falcon.HTTP_200
+        resp.text = json.dumps(result)
 
     
 class User(dict):
@@ -51,5 +65,16 @@ def createUser(userData):
     user["id"] = counters["users"]
     dbClient.get_default_database().get_collection("users").insert_one(user)
 
+
+def deleteUser(userId):
+    invId = int(userId)
+    #Eliminar items
+    deletedItems = items.deleteInvItems(invId)
+    #Eliminar sales
+    deletedSales = sales.deleteInvSales(invId)
+    #Eliminar user
+    deletedUser = dbClient.get_default_database().get_collection("users").delete_one({"id":userId})
+
+    return {"deletedItems": deletedItems, "deletedSales": deletedSales, "deletedUsers": deletedUser.deleted_count}
 
 usersResource = UsersResource()

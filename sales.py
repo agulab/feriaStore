@@ -9,25 +9,27 @@ dbClient = mongo_connector.dbClient
 
 class SalesResource:
     async def on_get(self, req: asgi.Request, resp: asgi.Response):
+        invId = req.context.auth["user"]["id"]
         limit = req.get_param_as_int("limit") if req.get_param_as_int("limit") else 10
         toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
         sort = req.get_param("sort") if req.get_param("sort") else "date"
         asc = pymongo.ASCENDING if req.get_param_as_bool("asc") else pymongo.DESCENDING
-        if sort in ["name","size"]:
+        if sort in ["name"]:
             sort = "item." + sort
 
         cursor = dbClient.get_default_database().get_collection("sales").aggregate([
-            {'$lookup':{'from': 'items', 'localField': 'itemId', 'foreignField': 'id', 'as': 'item'}},
+            {'$lookup':{'from': 'items', 'localField': 'itemId', 'foreignField': 'id', 'as': 'item','pipeline':[{'$match':{'inv': invId}}]}},
             {'$sort': {sort:asc, "_id":asc}},
             {'$skip':toPage},
             {'$limit':limit}])
         sales = []
         for sale in cursor:
-            sale["name"] = sale["item"][0]["name"]
-            sale["size"] = sale["item"][0]["size"]
-            del sale["item"]
-            del sale["_id"]
-            sales.append(sale)
+            if len(sale["item"]) > 0:
+                sale["name"] = sale["item"][0]["name"]
+                del sale["item"]
+                del sale["_id"]
+                del sale["inv"]
+                sales.append(sale)
 
         resp.status = falcon.HTTP_200
         resp.text = json.dumps(sales)
@@ -44,7 +46,8 @@ class SalesResource:
                 resp.text = "Imposible crear venta de item sin stock"
             else:
                 try:
-                    sale = Sale(saleReq)
+                    invId = req.context.auth["user"]["id"]
+                    sale = Sale(saleReq, invId)
                     dbClient.get_default_database().get_collection("sales").insert_one(sale)
                     dbClient.get_default_database().get_collection("items").find_one_and_update({"id":item["id"]},{"$inc":{"stock":-1}})
                     
@@ -83,10 +86,11 @@ class SaleResource:
 
             
 class Sale(dict):
-    def __init__(self, sale):
+    def __init__(self, sale, invId):
         checkDate = re.compile("\d{4}-\d{2}-\d{2}")
         
         # Atributos requeridos
+        self["inv"] = int(invId)
         self["price"] = int(sale["price"])
         self["itemId"] = int(sale["itemId"])
         if checkDate.match(sale["date"]):
@@ -99,6 +103,9 @@ class Sale(dict):
             {},{"$inc":{"sales":1}}, return_document=pymongo.ReturnDocument.AFTER)
         self["id"] = counters["sales"]
 
+def deleteInvSales(invId):
+    deleteResult = dbClient.get_default_database().get_collection("sales").delete_many({"inv":invId})
+    return deleteResult.deleted_count
 
 salesResource = SalesResource()
 saleResource = SaleResource()
