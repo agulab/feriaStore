@@ -9,6 +9,7 @@ dbClient = mongo_connector.dbClient
 
 class SalesResource:
     async def on_get(self, req: asgi.Request, resp: asgi.Response):
+        invId = req.context.auth["user"]["id"]
         limit = req.get_param_as_int("limit") if req.get_param_as_int("limit") else 10
         toPage = (req.get_param_as_int("page")-1) * limit if req.get_param_as_int("page") else 0
         sort = req.get_param("sort") if req.get_param("sort") else "date"
@@ -17,16 +18,18 @@ class SalesResource:
             sort = "item." + sort
 
         cursor = dbClient.get_default_database().get_collection("sales").aggregate([
-            {'$lookup':{'from': 'items', 'localField': 'itemId', 'foreignField': 'id', 'as': 'item'}},
+            {'$lookup':{'from': 'items', 'localField': 'itemId', 'foreignField': 'id', 'as': 'item','pipeline':[{'$match':{'inv': invId}}]}},
             {'$sort': {sort:asc, "_id":asc}},
             {'$skip':toPage},
             {'$limit':limit}])
         sales = []
         for sale in cursor:
-            sale["name"] = sale["item"][0]["name"]
-            del sale["item"]
-            del sale["_id"]
-            sales.append(sale)
+            if len(sale["item"]) > 0:
+                sale["name"] = sale["item"][0]["name"]
+                del sale["item"]
+                del sale["_id"]
+                del sale["inv"]
+                sales.append(sale)
 
         resp.status = falcon.HTTP_200
         resp.text = json.dumps(sales)
@@ -100,6 +103,9 @@ class Sale(dict):
             {},{"$inc":{"sales":1}}, return_document=pymongo.ReturnDocument.AFTER)
         self["id"] = counters["sales"]
 
+def deleteInvSales(invId):
+    deleteResult = dbClient.get_default_database().get_collection("sales").delete_many({"inv":invId})
+    return deleteResult.deleted_count
 
 salesResource = SalesResource()
 saleResource = SaleResource()
