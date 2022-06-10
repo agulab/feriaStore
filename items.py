@@ -90,13 +90,13 @@ class ItemResource:
             if body.get("stock") and int(body["stock"]) >= 0:
                 item["stock"] = int(body["stock"])
             if "custom" in body:
-                item["custom"] |= body["custom"]
+                item["custom"] = body["custom"]
             if "name" in body:
                 item["name"] = str(body["name"])
 
             generateKeywords(item)
 
-            dbClient.get_default_database().get_collection("items").find_one_and_update({"id":id},{ "$set": {
+            dbClient.get_default_database().get_collection("items").find_one_and_update({"id":id}, {"$set": {
                 "name":item["name"],
                 "img":item["img"],
                 "stock":item["stock"],
