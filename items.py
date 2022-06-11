@@ -38,6 +38,7 @@ class ItemsResource:
             item = Item(await req.get_media(), req.context.auth["user"]["id"])
             generateKeywords(item)
             result = dbClient.get_default_database().get_collection("items").insert_one(item)
+                
             if not result.inserted_id:
                 print("problemon")
             else:
@@ -48,6 +49,9 @@ class ItemsResource:
         except KeyError as e:
             resp.status = falcon.HTTP_400
             resp.text = "Falta el atributo requerido " + str(e)
+        except pymongo.errors.DuplicateKeyError as e:
+            resp.status = falcon.HTTP_409
+            resp.text = "Ya existe un item con el nombre '" + str(item["name"]) + "'"
 
     async def on_patch(self, req: asgi.Request, resp: asgi.Response):
         invId = req.context.auth["user"]["id"]
@@ -97,16 +101,21 @@ class ItemResource:
 
             generateKeywords(item)
 
-            dbClient.get_default_database().get_collection("items").find_one_and_update({"id":id}, {"$set": {
-                "name":item["name"],
-                "img":item["img"],
-                "stock":item["stock"],
-                "todo":item["todo"],
-                "custom":item["custom"],
-                "keywords":item["keywords"]
-            }})
-            resp.status = falcon.HTTP_200
-            resp.text = json.dumps(item)
+            try:
+                dbClient.get_default_database().get_collection("items").find_one_and_update({"id":id}, {"$set": {
+                    "name":item["name"],
+                    "img":item["img"],
+                    "stock":item["stock"],
+                    "todo":item["todo"],
+                    "custom":item["custom"],
+                    "keywords":item["keywords"]
+                }})
+                resp.status = falcon.HTTP_200
+                resp.text = json.dumps(item)
+            except pymongo.errors.DuplicateKeyError as e:
+                resp.status = falcon.HTTP_409
+                resp.text = "Ya existe un item con el nombre '" + str(item["name"]) + "'"
+
 
     def getItem(self, id, invId):
         query = {"id": id, "inv": invId}
@@ -140,7 +149,9 @@ class Item(dict):
         self["todo"] = int(item.pop("todo", 0))
         self["img"] = item.pop("img", "")
 
-        self["custom"] = item.pop("custom",{})
+        if item.get("custom"):
+            self["custom"] = item.pop("custom",{})
+            self["custom"].pop("",None) #Elimino key vacía
 
         self["inv"] = invId
 
