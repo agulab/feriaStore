@@ -90,6 +90,7 @@ class ItemResource:
             if body.get("stock") and int(body["stock"]) >= 0:
                 item["stock"] = int(body["stock"])
             if "custom" in body:
+                body["custom"].pop("",None) #Elimino key vacía
                 item["custom"] = body["custom"]
             if "name" in body:
                 item["name"] = str(body["name"])
